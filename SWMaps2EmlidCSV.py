@@ -51,22 +51,26 @@ try:
     lon_col = next((c for c in df.columns if c in ["longitude","lon"]), None)
     lat_col = next((c for c in df.columns if c in ["latitude","lat"]), None)
     elev_col = next((c for c in df.columns if c in ["elevation","ellipsoidal height","height"]), None)
-    inst_height_col = next((c for c in df.columns if c in ["instrument ht","antenna height"]), None)
+    inst_height_col = next(
+        (c for c in df.columns if any(k in c.lower() for k in ["instrument height","antenna height","antenna ht"])),
+        None
+    )
 
     n_rows = len(df)
 
-    # Parse time including input offset and format as UTC±HH:MM
+    # Parse time including input offset and format as UTC±HH:MM with milliseconds
     if time_col:
         df[time_col] = pd.to_datetime(df[time_col], dayfirst=True, errors="coerce")
 
-        def format_utc(dt):
+        def format_utc_with_ms(dt):
             if pd.isna(dt):
                 return ""
             offset = dt.strftime("%z")  # e.g., +0100
             offset_formatted = offset[:3] + ":" + offset[3:] if offset else "+00:00"
-            return dt.strftime("%Y-%m-%d %H:%M:%S") + f" UTC{offset_formatted}"
+            time_str = dt.strftime("%Y-%m-%d %H:%M:%S") + f".{int(dt.microsecond/1000):03d}"
+            return time_str + f" UTC{offset_formatted}"
 
-        df["avg_time_str"] = df[time_col].apply(format_utc)
+        df["avg_time_str"] = df[time_col].apply(format_utc_with_ms)
 
     # Build mapped dataframe with correct length series for scalars
     mapped = pd.DataFrame({
