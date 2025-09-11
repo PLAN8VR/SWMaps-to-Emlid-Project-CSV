@@ -45,14 +45,18 @@ try:
     df = pd.read_csv(input_file)
     df.columns = df.columns.str.lower()  # normalize
 
-    # Detect possible column names
-    name_col = next((c for c in df.columns if c in ["id","name"]), None)
+    # Detect possible columns
+    name_col = next((c for c in df.columns if c.lower() in ["id", "track name", "name"]), None)
     time_col = next((c for c in df.columns if c in ["time","timestamp","date"]), None)
     lon_col = next((c for c in df.columns if c in ["longitude","lon"]), None)
     lat_col = next((c for c in df.columns if c in ["latitude","lat"]), None)
     elev_col = next((c for c in df.columns if c in ["elevation","ellipsoidal height","height"]), None)
+    
+    # Detect instrument/antenna height column robustly
     inst_height_col = next(
-        (c for c in df.columns if any(k in c.lower() for k in ["instrument height","antenna height","antenna ht"])),
+        (c for c in df.columns if any(k in c.lower() for k in [
+            "instrument height", "instrument ht", "antenna height", "antenna ht"
+        ])),
         None
     )
 
@@ -74,7 +78,7 @@ try:
 
     # Build mapped dataframe with correct length series for scalars
     mapped = pd.DataFrame({
-        "Name": df[name_col] if name_col else pd.Series([""] * n_rows),
+        "Name": df[name_col].astype(str) if name_col else pd.Series([""] * n_rows),
         "Averaging start": df["avg_time_str"] if time_col else pd.Series([""] * n_rows),
         "Averaging end": df["avg_time_str"] if time_col else pd.Series([""] * n_rows),
         "Samples": pd.Series(1, index=df.index),
