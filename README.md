@@ -2,6 +2,8 @@ A Python script for Windows that takes a SW Maps project csv and converts it to 
 
 Run the .py file in python, select the input project csv (SW Maps project csv export format) and enter a name for the exported Emlid CSV project file.
 
-Currently, the output is hard coded to use meters as the antenna height unit. [https://github.com/PLAN8VR/SWMaps-to-Emlid-Project-CSV/blob/94089eaa573028e9289a60717a9ae750d1f26c51/SWMaps2EmlidCSV.py#L93](https://github.com/PLAN8VR/SWMaps-to-Emlid-Project-CSV/blob/713df298f799f5417ca4479cb2bfc70624dc86dd/SWMaps2EmlidCSV.py#L93)
+Currently, the output is hard coded to use meters as the antenna height unit. 
+
+https://github.com/PLAN8VR/SWMaps-to-Emlid-Project-CSV/blob/5bc8576bd1a0ed11cce46dc1bdfc3e4a42550369/SWMaps2EmlidCSV.py#L93
 
 Also, SW Maps does not appear to output the time stamps for averaged point records, so I have hardcoded the Emlid csv to just state 1 sample over 4 seconds average. IE, whatever SW Maps records as an average is all that is available as a fixed point if using averaging (so, use averaging with caution) 
