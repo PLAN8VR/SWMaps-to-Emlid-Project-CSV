@@ -2,6 +2,9 @@ import pandas as pd
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import sys
+from datetime import timedelta
+import os
+import subprocess
 
 # Tkinter setup
 root = tk.Tk()
@@ -62,7 +65,7 @@ try:
 
     n_rows = len(df)
 
-    # Parse time including input offset and format as UTC±HH:MM with milliseconds
+    # Parse time including input offset
     if time_col:
         df[time_col] = pd.to_datetime(df[time_col], dayfirst=True, errors="coerce")
 
@@ -74,13 +77,14 @@ try:
             time_str = dt.strftime("%Y-%m-%d %H:%M:%S") + f".{int(dt.microsecond/1000):03d}"
             return time_str + f" UTC{offset_formatted}"
 
-        df["avg_time_str"] = df[time_col].apply(format_utc_with_ms)
+        df["avg_time_start"] = df[time_col].apply(format_utc_with_ms)
+        df["avg_time_end"] = (df[time_col] + timedelta(seconds=4)).apply(format_utc_with_ms)
 
     # Build mapped dataframe with correct length series for scalars
     mapped = pd.DataFrame({
         "Name": df[name_col].astype(str) if name_col else pd.Series([""] * n_rows),
-        "Averaging start": df["avg_time_str"] if time_col else pd.Series([""] * n_rows),
-        "Averaging end": df["avg_time_str"] if time_col else pd.Series([""] * n_rows),
+        "Averaging start": df["avg_time_start"] if time_col else pd.Series([""] * n_rows),
+        "Averaging end": df["avg_time_end"] if time_col else pd.Series([""] * n_rows),
         "Samples": pd.Series(1, index=df.index),
         "Longitude": df[lon_col] if lon_col else pd.Series([""] * n_rows),
         "Latitude": df[lat_col] if lat_col else pd.Series([""] * n_rows),
@@ -99,7 +103,18 @@ try:
 
     # Save CSV
     mapped.to_csv(output_file, index=False)
+
+    # Show popup confirmation
     messagebox.showinfo("Success", f"Conversion complete.\nSaved as:\n{output_file}")
+
+    # Open containing folder
+    folder = os.path.dirname(output_file)
+    if sys.platform == "win32":
+        os.startfile(folder)
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", folder])
+    else:
+        subprocess.Popen(["xdg-open", folder])
 
 except Exception as e:
     messagebox.showerror("Error", f"An error occurred: {e}")
