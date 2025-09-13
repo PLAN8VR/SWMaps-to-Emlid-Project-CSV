@@ -49,14 +49,11 @@ try:
     df.columns = df.columns.str.lower()
 
     # Detect possible columns
-    name_col = next((c for c in df.columns if c.lower()
-                    in ["id", "track name", "name"]), None)
-    time_col = next((c for c in df.columns if c in [
-                    "time", "timestamp", "date"]), None)
+    name_col = next((c for c in df.columns if c.lower() in ["id", "track name", "name"]), None)
+    time_col = next((c for c in df.columns if c in ["time", "timestamp", "date"]), None)
     lon_col = next((c for c in df.columns if c in ["longitude", "lon"]), None)
     lat_col = next((c for c in df.columns if c in ["latitude", "lat"]), None)
-    elev_col = next((c for c in df.columns if c in [
-                    "elevation", "ellipsoidal height", "height"]), None)
+    elev_col = next((c for c in df.columns if c in ["elevation", "ellipsoidal height", "height"]), None)
     inst_height_col = next(
         (c for c in df.columns if any(k in c.lower() for k in [
             "instrument height", "instrument ht", "antenna height", "antenna ht"
@@ -64,27 +61,24 @@ try:
         None
     )
     pdop_col = next((c for c in df.columns if "pdop" in c.lower()), None)
+    fix_col = next((c for c in df.columns if "fix" in c.lower() or "fixid" in c.lower()), None)
 
     n_rows = len(df)
 
     # Parse time including input offset
     if time_col:
-        df[time_col] = pd.to_datetime(
-            df[time_col], dayfirst=True, errors="coerce")
+        df[time_col] = pd.to_datetime(df[time_col], dayfirst=True, errors="coerce")
 
         def format_utc_with_ms(dt):
             if pd.isna(dt):
                 return ""
-            offset = dt.strftime("%z")  # e.g., +0100
-            offset_formatted = offset[:3] + ":" + \
-                offset[3:] if offset else "+00:00"
-            time_str = dt.strftime("%Y-%m-%d %H:%M:%S") + \
-                f".{int(dt.microsecond/1000):03d}"
+            offset = dt.strftime("%z")
+            offset_formatted = offset[:3] + ":" + offset[3:] if offset else "+00:00"
+            time_str = dt.strftime("%Y-%m-%d %H:%M:%S") + f".{int(dt.microsecond/1000):03d}"
             return time_str + f" UTC{offset_formatted}"
 
         df["avg_time_start"] = df[time_col].apply(format_utc_with_ms)
-        df["avg_time_end"] = (
-            df[time_col] + timedelta(seconds=4)).apply(format_utc_with_ms)
+        df["avg_time_end"] = (df[time_col] + timedelta(seconds=4)).apply(format_utc_with_ms)
 
     # Build mapped dataframe with correct length series for scalars
     mapped = pd.DataFrame({
@@ -100,6 +94,25 @@ try:
         "PDOP": df[pdop_col] if pdop_col else pd.Series([""] * n_rows)
     })
 
+    # Map SWMaps fix codes to Emlid solution status
+    fix_mapping = {
+        1: "Single",   # RED Dot
+        2: "DGPS",     # BLUE Dot
+        3: "PPP",      # Optional
+        4: "Fix",      # GREEN Dot
+        5: "Float"     # ORANGE Dot
+    }
+
+    if fix_col:
+        # Convert to integer if needed
+        try:
+            df[fix_col] = df[fix_col].astype(int)
+        except:
+            pass
+        mapped["Solution status"] = df[fix_col].map(fix_mapping).fillna("Single")
+    else:
+        mapped["Solution status"] = pd.Series(["Single"] * n_rows)
+
     # Fill missing headers with empty strings
     for col in emlid_headers:
         if col not in mapped.columns:
@@ -112,8 +125,7 @@ try:
     mapped.to_csv(output_file, index=False)
 
     # Show popup confirmation
-    messagebox.showinfo(
-        "Success", f"Conversion complete.\nSaved as:\n{output_file}")
+    messagebox.showinfo("Success", f"Conversion complete.\nSaved as:\n{output_file}")
 
     # Open containing folder
     folder = os.path.dirname(output_file)
