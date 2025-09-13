@@ -54,14 +54,13 @@ try:
     lon_col = next((c for c in df.columns if c in ["longitude","lon"]), None)
     lat_col = next((c for c in df.columns if c in ["latitude","lat"]), None)
     elev_col = next((c for c in df.columns if c in ["elevation","ellipsoidal height","height"]), None)
-    
-    # Detect instrument/antenna height column robustly
     inst_height_col = next(
         (c for c in df.columns if any(k in c.lower() for k in [
             "instrument height", "instrument ht", "antenna height", "antenna ht"
         ])),
         None
     )
+    pdop_col = next((c for c in df.columns if "pdop" in c.lower()), None)  # detect PDOP
 
     n_rows = len(df)
 
@@ -90,7 +89,8 @@ try:
         "Latitude": df[lat_col] if lat_col else pd.Series([""] * n_rows),
         "Elevation": df[elev_col] if elev_col else pd.Series([""] * n_rows),
         "Antenna height": df[inst_height_col] if inst_height_col else pd.Series([""] * n_rows),
-        "Antenna height units": pd.Series(["m"] * n_rows)
+        "Antenna height units": pd.Series(["m"] * n_rows),
+        "PDOP": df[pdop_col] if pdop_col else pd.Series([""] * n_rows)  # <-- PDOP mapping
     })
 
     # Fill missing headers with empty strings
